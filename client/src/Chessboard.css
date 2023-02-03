@@ -1,0 +1,38 @@
+.container {
+    display: grid;
+    grid-template-columns: 75px 75px 75px 75px 75px 75px 75px 75px;
+    grid-template-rows: 75px 75px 75px 75px 75px 75px 75px 75px;
+    gap: 0px 0px;
+    grid-auto-flow: row;
+    grid-template-areas:
+        ". . . . . . . ."
+        ". . . . . . . ."
+        ". . . . . . . ."
+        ". . . . . . . ."
+        ". . . . . . . ."
+        ". . . . . . . ."
+        ". . . . . . . ."
+        ". . . . . . . .";
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.white-square {
+    background-color: #F0DAB7;
+}
+
+.black-square {
+    background-color: #B48766;
+}
+
+.selected {
+    background-color: red;
+}
+
+img {
+    width: 75px;
+    height: 75px;
+}

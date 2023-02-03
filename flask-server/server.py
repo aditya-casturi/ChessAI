@@ -50,7 +50,7 @@ class ChessPiece:
 def add_piece(piece, file_one, file_two):
     pieces.add(ChessPiece(Color.WHITE, piece, Square(file_one, 1)))
     pieces.add(ChessPiece(Color.BLACK, piece, Square(file_one, 8)))
-    if file_two is not "":
+    if file_two != "":
         pieces.add(ChessPiece(Color.WHITE, piece, Square(file_two, 1)))
         pieces.add(ChessPiece(Color.BLACK, piece, Square(file_two, 8)))
 
