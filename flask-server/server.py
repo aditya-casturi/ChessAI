@@ -1,73 +1,38 @@
-from flask import Flask
+from flask import Flask, request
 from enum import Enum
 
 app = Flask(__name__)
 
+board = {}
 
-@app.route('/members')
+pieces = {
+    "Rook": ['A8', 'H8', 'A1', 'H1'],
+    "Knight": ['B8', 'G8', 'B1', 'G1'],
+    "Bishop": ['C8', 'F8', 'C1', 'F1'],
+    "Queen": ['D8', 'D1'],
+    "King": ['E8', 'E1'],
+    "Pawn": ['A7', 'B7', 'C7', 'D7', 'E7', 'F7', 'G7', 'H7', 'A2', 'B2', 'C2', 'D2', 'E2', 'F2', 'G2', 'H2']
+}
+
+for piece_type, positions in pieces.items():
+    for pos in positions:
+        board[pos] = piece_type
+
+for file in "ABCDEFGH":
+    for rank in "12345678":
+        square = file + rank
+        if square not in board:
+            board[square] = None
+
+
+@app.route('/move')
 def index():
-    return {"members": ["Member1", "Member2", "Member3"]}
+    rank = request.args.get('rank')
+    file = request.args.get('file')
+    if board[file+rank] != None:
+        return 'valid'
+    return 'invalid'
 
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-class Color(Enum):
-    WHITE = 1
-    BLACK = 2
-
-
-class Piece(Enum):
-    PAWN = 1
-    KNIGHT = 2
-    BISHOP = 3
-    ROOK = 4
-    QUEEN = 5
-    KING = 6
-
-
-class Square():
-    file = "A"
-    rank = 1
-
-    def __init__(self, file, rank):
-        self.file = file
-        self.rank = rank
-
-
-class ChessPiece:
-    color = Color.WHITE
-    type = Piece.PAWN
-    square = Square()
-
-    def __init__(self, color, type, square):
-        self.color = color
-        self.type = type
-        self.square = square
-
-
-def add_piece(piece, file_one, file_two):
-    pieces.add(ChessPiece(Color.WHITE, piece, Square(file_one, 1)))
-    pieces.add(ChessPiece(Color.BLACK, piece, Square(file_one, 8)))
-    if file_two != "":
-        pieces.add(ChessPiece(Color.WHITE, piece, Square(file_two, 1)))
-        pieces.add(ChessPiece(Color.BLACK, piece, Square(file_two, 8)))
-
-
-def initialize_board():
-    letters = ["A", "B", "C", "D", "E", "F", "G", "H"]
-
-    for i in range(8):
-        pieces.add(ChessPiece(Color.WHITE, Piece.PAWN, Square(letters[i], 2)))
-        pieces.add(ChessPiece(Color.BLACK, Piece.PAWN, Square(letters[i], 7)))
-
-    add_piece(Piece.KNIGHT, "B", "G")
-    add_piece(Piece.BISHOP, "C", "F")
-    add_piece(Piece.ROOK, "A", "H")
-    add_piece(Piece.QUEEN, "D", "")
-    add_piece(Piece.KING, "E", "")
-
-
-pieces = []
-initialize_board()

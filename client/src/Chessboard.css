@@ -28,8 +28,8 @@
     background-color: #B48766;
 }
 
-.selected {
-    background-color: red;
+.selected-square {
+    background-color: #646F40;
 }
 
 img {
