@@ -36,3 +36,15 @@ img {
     width: 75px;
     height: 75px;
 }
+
+h1::first-letter {
+    text-transform:capitalize;
+}
+
+h1 {
+    position: absolute;
+    left: 50%;
+    margin-left: -100px;
+    margin-top: 75px;
+    color: white;
+}
