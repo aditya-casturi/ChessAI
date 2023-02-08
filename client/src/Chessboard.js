@@ -1,6 +1,6 @@
 import { React, useState } from 'react'
 import './Chessboard.css'
-import { Knight, Bishop, Rook, King, Queen, Pawn } from './PieceIcons'
+import Square from './Square'
 
 const chessboard = new Map()
 const files = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -18,11 +18,14 @@ for (let rank = 1; rank < 9; rank++) {
 }
 
 let turn = "white";
+let selectedPiece = "";
+let whiteKingHasMoved = false;
+let blackKingHasMoved = false;
 
 export default function Chessboard() {
     const [board, setBoard] = useState(chessboard);
     const [selectedSquareIndex, setSelectedSquareIndex] = useState(-1)
-    const [selectedPiece, setSelectedPiece] = useState('');
+    const [legalSquares, setLegalSquares] = useState([]);
 
     return (
         <>
@@ -30,18 +33,22 @@ export default function Chessboard() {
                 {[...Array(64)].map((e, i) => {
                     const squareColor = indexToSquareColor(i)
                     return (
-                        <Square 
+                        <Square
+                            className={`${legalSquares.includes(i) ? 'targeted-square' : ''}`} 
                             pieceInfo={board[indexToSquare(i)]}
                             squareColor={squareColor}
                             key={indexToSquare(i)}
                             squareIndex = {i}
-                            selected={selectedSquareIndex == i} />
+                            selected={selectedSquareIndex == i}
+                            handleSquareClick={handleSquareClick}
+                            legalSquares={legalSquares} />
                     );
                 })}
             </div>
             <h1>{turn}'s Turn</h1>
         </>
     );
+
 
     function indexToSquare(index) {
         const file = String.fromCharCode(97 + index % 8).toUpperCase();
@@ -66,186 +73,248 @@ export default function Chessboard() {
         let pieceToTakeColor = board[indexToSquare(squareIndex)] == null ? '' : board[indexToSquare(squareIndex)].split(':')[0];
 
         if ((selectedPiece != '' || board[indexToSquare(squareIndex)] != null) && squareIndex != selectedSquareIndex) {
-            if (selectedPiece == '' && board[indexToSquare(squareIndex)] != null && turn == pieceToTakeColor) {
-                setSelectedPiece(board[indexToSquare(squareIndex)]);
+            if (board[indexToSquare(squareIndex)] != null && turn == pieceToTakeColor) {
+                selectedPiece = board[indexToSquare(squareIndex)];
                 setSelectedSquareIndex(squareIndex);
+                getLegalMoves(squareIndex);
             } else if ((board[indexToSquare(squareIndex)] == null || selectedPiece != '') && selectedPieceColor != pieceToTakeColor && selectedPieceColor == turn) {
-                renderMove(squareIndex, newBoard)
+                if (legalSquares.includes(squareIndex))
+                    renderMove(squareIndex, board)
             }
 
             setSelectedSquareIndex(squareIndex);
         }
     }
 
+    function getLegalMoves(squareIndex) {
+        let legalSquares = [];
+        let squareToMoveIsEmpty;
+        let toCheck;
+
+        if (selectedPiece.includes('Pawn')) {
+            turn == 'white' ? toCheck = [-16, -8, -9, -7] : toCheck = [16, 8, 9, 7]
+
+            for (let i = 0; i < toCheck.length; i++) {
+                squareToMoveIsEmpty = board[indexToSquare(squareIndex + toCheck[i])] == null;
+                if ((i == 0 && ((squareIndex > 47 && squareIndex < 56) || (squareIndex > 7 && squareIndex < 16))) || i == 1) {
+                    if (squareToMoveIsEmpty) legalSquares.push(squareIndex + toCheck[i])
+                } else {
+                    let pieceToTakeColor = String(board[indexToSquare(squareIndex + toCheck[i])]).split(':')[0]
+                    if (!squareToMoveIsEmpty && pieceToTakeColor != turn) legalSquares.push(squareIndex + toCheck[i])
+                }
+            }
+        } else if (selectedPiece.includes('Knight')) {
+            toCheck = [10, 17, 15, -6, -10, -15, -17, 6];
+            
+            for (let i = 0; i < toCheck.length; i++) {
+                let pieceToTakeColor = String(board[indexToSquare(squareIndex + toCheck[i])]).split(':')[0]
+                squareToMoveIsEmpty = board[indexToSquare(squareIndex + toCheck[i])] == null ? true : false
+                let moveIsToValidFile = Math.abs((squareIndex % 8) - ((squareIndex + toCheck[i]) % 8)) <= 2;
+                if (((!squareToMoveIsEmpty && pieceToTakeColor != turn) || squareToMoveIsEmpty) && moveIsToValidFile) {
+                    legalSquares.push(squareIndex + toCheck[i])
+                }
+            }
+        } else if (selectedPiece.includes('Bishop')) {
+            legalSquares = legalBishopMoves(squareIndex)
+        } else if (selectedPiece.includes('Rook')) {
+            legalSquares = legalRookMoves(squareIndex)
+        } else if (selectedPiece.includes('Queen')) {
+            legalSquares = legalRookMoves(squareIndex);
+            legalSquares = legalSquares.concat(legalBishopMoves(squareIndex));
+        } else {
+            toCheck = [-9, -8, -7, -1, 1, 7, 8, 9];
+
+            for (let i = 0; i < toCheck.length; i++) {
+                let pieceToTakeColor = String(board[indexToSquare(squareIndex + toCheck[i])]).split(':')[0]
+                squareToMoveIsEmpty = board[indexToSquare(squareIndex + toCheck[i])] == null ? true : false
+                let moveIsToValidFile = Math.abs((squareIndex % 8) - ((squareIndex + toCheck[i]) % 8)) <= 1;
+                if (((!squareToMoveIsEmpty && pieceToTakeColor != turn) || squareToMoveIsEmpty) && moveIsToValidFile) {
+                    legalSquares.push(squareIndex + toCheck[i])
+                }
+            }
+
+            console.log(squareIndex)
+            console.log(board)
+            console.log(indexToSquare(61))
+            console.log(indexToSquare(62))
+            console.log(indexToSquare(63))
+            console.log(board[indexToSquare(61)])
+            console.log(board[indexToSquare(62)])
+            console.log(board[indexToSquare(63)])
+
+            if (squareIndex == 60 && board[indexToSquare(61)] == null && board[indexToSquare(62)] == null 
+                && String(board[indexToSquare(63)].includes('Rook')) && !whiteKingHasMoved) {
+                    legalSquares.push(62);
+            }
+        }
+
+        setLegalSquares(legalSquares);
+    }
+
+    function legalRookMoves(position) {
+        let moves = [];
+        let x = Math.floor(position / 8);
+        let y = position % 8;
+
+        // Check moves in the up direction
+        let i = x - 1;
+        while (i >= 0) {
+            let target = i * 8 + y;
+            let pieceToTakeColor = String(board[indexToSquare(target)]).split(':')[0];
+            if (board[indexToSquare(target)] === null) {
+                moves.push(target);
+            } else if (pieceToTakeColor != turn) {
+                moves.push(target);
+                break;
+            } else {
+                break;
+            }
+            i--;
+        }
+        // Check moves in the down direction
+        i = x + 1;
+        while (i < 8) {
+            let target = i * 8 + y;
+            let pieceToTakeColor = String(board[indexToSquare(target)]).split(':')[0];
+            if (board[indexToSquare(target)] === null) {
+                moves.push(target);
+            } else if (pieceToTakeColor != turn) {
+                moves.push(target);
+                break;
+            } else {
+                break;
+            }
+            i++;
+        }
+        // Check moves in the right direction
+        let j = y + 1;
+        while (j < 8) {
+            let target = x * 8 + j;
+            let pieceToTakeColor = String(board[indexToSquare(target)]).split(':')[0];
+            if (board[indexToSquare(target)] === null) {
+                moves.push(target);
+            } else if (pieceToTakeColor != turn) {
+                moves.push(target);
+                break;
+            } else {
+                break;
+            }
+            j++;
+        }
+        
+        // Check moves in the left direction
+        j = y - 1;
+        while (j >= 0) {
+            let target = x * 8 + j;
+            let pieceToTakeColor = String(board[indexToSquare(target)]).split(':')[0];
+            if (board[indexToSquare(target)] === null) {
+                moves.push(target);
+            } else if (pieceToTakeColor != turn) {
+                moves.push(target);
+                break;
+            } else {
+                break;
+            }
+            j--;
+        }
+        return moves;
+    }
+
+
+    function legalBishopMoves(position) {
+        let moves = [];
+        let x = Math.floor(position / 8);
+        let y = position % 8;
+
+        // Check moves in the up-right direction
+        let i = x - 1, j = y + 1;
+        while (i >= 0 && j < 8) {
+            let target = i * 8 + j;
+            let pieceToTakeColor = String(board[indexToSquare(target)]).split(':')[0];
+            if (board[indexToSquare(target)] === null) {
+                moves.push(target);
+            } else if (pieceToTakeColor != turn) {
+                moves.push(target);
+                break;
+            } else {
+                break;
+            }
+            i--;
+            j++;
+        }
+        // Check moves in the up-left direction
+        i = x - 1;
+        j = y - 1;
+        while (i >= 0 && j >= 0) {
+            let target = i * 8 + j;
+            let pieceToTakeColor = String(board[indexToSquare(target)]).split(':')[0];
+            if (board[indexToSquare(target)] === null) {
+                moves.push(target);
+            } else if (pieceToTakeColor != turn) {
+                moves.push(target);
+                break;
+            } else {
+                break;
+            }
+            i--;
+            j--;
+        }
+        // Check moves in the down-right direction
+        i = x + 1;
+        j = y + 1;
+        while (i < 8 && j < 8) {
+            let target = i * 8 + j;
+            let pieceToTakeColor = String(board[indexToSquare(target)]).split(':')[0];
+            if (board[indexToSquare(target)] === null) {
+                moves.push(target);
+            } else if (pieceToTakeColor != turn) {
+                moves.push(target);
+                break;
+            } else {
+                break;
+            }
+            i++;
+            j++;
+        }
+        // Check moves in the down-left direction
+        i = x + 1;
+        j = y - 1;
+        while (i < 8 && j >= 0) {
+            let target = i * 8 + j;
+            let pieceToTakeColor = String(board[indexToSquare(target)]).split(':')[0];
+            if (board[indexToSquare(target)] === null) {
+                moves.push(target);
+            } else if (pieceToTakeColor != turn) {
+                moves.push(target);
+                break;
+            } else {
+                break;
+            }
+            i++;
+            j--;
+        }
+        return moves;
+    }
+
     function renderMove(newSquareIndex, newBoard) {
-        if(checkMoveValidity(selectedSquareIndex, newSquareIndex)) {
+        if (selectedPiece.includes("King") && newSquareIndex != 62) {
+            whiteKingHasMoved = true;
+        } else if (selectedPiece.includes("King") && newSquareIndex == 62) {
+            newBoard[indexToSquare(63)] = null;
+            newBoard[indexToSquare(62)] = selectedPiece;
+            newBoard[indexToSquare(61)] = turn + ':Rook';
+            newBoard[indexToSquare(60)] = null;
+        } else {
             newBoard[indexToSquare(newSquareIndex)] = board[indexToSquare(selectedSquareIndex)];
             newBoard[indexToSquare(selectedSquareIndex)] = null;
-    
-            setBoard(newBoard);
-            turn = turn == 'white' ? 'black' : 'white';
         }
 
-        setSelectedPiece('');
-    }
+        setBoard(newBoard);
+        turn = turn == 'white' ? 'black' : 'white';
 
-    function checkMoveValidity(fromIndex, toIndex) {
-        let fromSquare = indexToSquare(fromIndex);
-        let toSquare = indexToSquare(toIndex);
 
-        let piece = board[fromSquare].split(':')[1];
 
-        let squareToMoveIsEmpty = board[toSquare] == null ? true : false
-
-        if (piece == 'Pawn') {
-            if ((fromIndex > 47 && toIndex < 56 && fromIndex == toIndex + 16) || 
-                (fromIndex > 7 && toIndex < 32 && fromIndex == toIndex - 16)) {
-                return squareToMoveIsEmpty;
-            } else if ((fromIndex == toIndex + 8 || fromIndex == toIndex - 8) && squareToMoveIsEmpty) {
-                return true;
-            } else if ((fromIndex == toIndex + 7 || fromIndex == toIndex - 7 || 
-                        fromIndex == toIndex + 9 || fromIndex == toIndex - 9) && !squareToMoveIsEmpty) {
-                return true;
-            }
-            return false;
-        } else if (piece == 'Knight') {
-            if (fromIndex == toIndex + 17 || fromIndex == toIndex + 15 || fromIndex == toIndex + 6 || fromIndex == toIndex - 10 ||
-                fromIndex == toIndex -17 || fromIndex == toIndex - 15 || fromIndex == toIndex - 6 || fromIndex == toIndex + 10) {
-                return true;
-            }
-            return false;
-        } else if (piece == 'Rook') {
-            return checkIfPathIsBlocked(fromIndex, toIndex, 'line')
-        } else if (piece == 'Bishop') {
-            return checkIfPathIsBlocked(fromIndex, toIndex, 'diagonal')
-        } else if (piece == 'Queen') {
-            let isDiagonalBlocked = checkIfPathIsBlocked(fromIndex, toIndex, 'diagonal');
-            let isLineBlocked = checkIfPathIsBlocked(fromIndex, toIndex, 'line');
-            return (!isDiagonalBlocked && isLineBlocked) || (!isLineBlocked && isDiagonalBlocked)
-        } else {
-            if ((toIndex >= fromIndex - 9 && toIndex <= fromIndex - 7) || (toIndex >= fromIndex + 7 && toIndex <= fromIndex + 9) ||
-                fromIndex == toIndex + 1 || fromIndex == toIndex - 1) {
-                    return true;
-            }
-            return false;
-        }
-    }
-
-    function checkIfPathIsBlocked(start, end, pathType) {
-        let squareIndexesToCheck;
-        if (pathType == 'diagonal') {
-            squareIndexesToCheck = getDiagonalSquares(start, end);
-        } else if (pathType == 'line') {
-            squareIndexesToCheck = getLineSquares(start, end);
-        }
-
-        if (squareIndexesToCheck == null) {
-            return false;
-        } else {
-            for (let i = 0; i < squareIndexesToCheck.length; i++)  {
-                if (board[indexToSquare(squareIndexesToCheck[i])] != null) return false;
-            }
-            return true;
-        }
-    }
-
-    function getLineSquares(start, end) {
-        const startRow = Math.floor(start / 8);
-        const startCol = start % 8;
-        const endRow = Math.floor(end / 8);
-        const endCol = end % 8;
-        
-        if (startRow !== endRow && startCol !== endCol) {
-          return null;
-        }
-        
-        let squares = [];
-        
-        if (startRow === endRow) {
-          let colStep = startCol < endCol ? 1 : -1;
-          let currentCol = startCol + colStep;
-          
-          while (currentCol !== endCol) {
-            squares.push(startRow * 8 + currentCol);
-            currentCol += colStep;
-          }
-        } else {
-          let rowStep = startRow < endRow ? 1 : -1;
-          let currentRow = startRow + rowStep;
-          
-          while (currentRow !== endRow) {
-            squares.push(currentRow * 8 + startCol);
-            currentRow += rowStep;
-          }
-        }
-        
-        return squares;
-      }
-      
-
-    function getDiagonalSquares(start, end) {
-        const startRow = Math.floor(start / 8);
-        const startCol = start % 8;
-        const endRow = Math.floor(end / 8);
-        const endCol = end % 8;
-        
-        if (Math.abs(startRow - endRow) !== Math.abs(startCol - endCol)) {
-          return null;
-        }
-        
-        const rowDiff = endRow - startRow;
-        const colDiff = endCol - startCol;
-        
-        const rowStep = rowDiff > 0 ? 1 : -1;
-        const colStep = colDiff > 0 ? 1 : -1;
-        
-        let currentRow = startRow + rowStep;
-        let currentCol = startCol + colStep;
-        let squares = [];
-        
-        while (currentRow !== endRow) {
-          squares.push(currentRow * 8 + currentCol);
-          
-          currentRow += rowStep;
-          currentCol += colStep;
-        }
-        
-        return squares;
-    }
-
-    function Square(props) {
-        return <div 
-                className={`${props.squareColor} ${props.selected ? 'selected-square' : ''}`} 
-                onClick={() => handleSquareClick(props.squareIndex)}>
-                <Piece pieceInfo={props.pieceInfo}/>
-            </div>
-    }
-    
-    function Piece(props) {
-        let piece = null;
-        const pieceColor = String(props.pieceInfo).split(':')[0];
-        const pieceType = String(props.pieceInfo).split(':')[1];
-        switch(pieceType) {
-            case 'Rook':
-                piece = <Rook color={pieceColor} />
-                break;
-            case 'Knight':
-                piece = <Knight color={pieceColor} />
-                break;
-            case 'Bishop':
-                piece = <Bishop color={pieceColor} />
-                break;
-            case 'Queen':
-                piece = <Queen color={pieceColor} />
-                break;
-            case 'King':
-                piece = <King color={pieceColor} />
-                break;
-            case 'Pawn':
-                piece = <Pawn color={pieceColor} />
-                break;
-        }
-    
-        return <>{piece}</>
+        selectedPiece = "";
+        setLegalSquares([]);
     }
 }
