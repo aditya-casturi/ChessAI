@@ -1,30 +1,31 @@
 import { React, useState } from 'react'
-import Piece from './Piece'
+import './Square.css'
 import { useDrop } from 'react-dnd';
 
 export default function Square(props) {
-    const PIECE = []
+    const handleDragStart = (event, props) => {
+        event.dataTransfer.setData("props", JSON.stringify(props));
+    };
 
-    const [basket, setBasket] = useState([])
-    const [{ isOver }, dropRef] = useDrop({
-        accept: 'piece',
-        drop: (item) => setBasket((basket) =>
-            !basket.includes(item) ? [...basket, item] : basket),
-        collect: (monitor) => ({
-            isOver: monitor.isOver()
-        })
-    })
+    const handleDragOver = (event) => {
+        event.preventDefault();
+      };
 
-    return <div style={{ boxSizing: 'border-box', position: 'relative', backgroundColor: props.legalSquares.includes(props.squareIndex) && props.pieceInfo != null ? '#CB6569' : '', cursor: props.pieceInfo == null ? '' : 'grab'}}
-        className={`${props.squareColor} ${props.selected ? 'selected-square' : ''}`}
-        onClick={() => props.handleSquareClick(props.squareIndex)}>
-        <div className='pets'>
-            {PIECE.map(piece => <Piece draggable pieceInfo={piece.props.pieceInfo} />)}
+    const handleDrop = (event) => {
+        event.preventDefault();
+        let data = JSON.parse(event.dataTransfer.getData("props"));
+        props.handleSquareClick(data.squareIndex, event, data)
+      };
+
+    return (
+        <div draggable={false} className={`
+            ${props.squareColor} 
+            ${props.selected ? 'selected-square' : ''}
+        `} onClick={() => props.handleSquareClick(props.squareIndex)}>
+            <div draggable id={props.piece + props.squareIndex} onMouseDown={() => props.handleSquareClick(props.squareIndex)} onDragStart={(event) => handleDragStart(event, props)} onDragOver={handleDragOver} onDrop={handleDrop} style={{zIndex: '1', position: 'relative'}} className={`piece ${props.piece}`}>
+                <div className='dot' style={{visibility: props.legalSquares.includes(props.squareIndex) ? 'visible' : 'hidden' }}>●</div>
+            </div>
         </div>
-        <div className='basket' ref={dropRef}>
-            {basket.map(piece => <Piece draggable pieceInfo={piece.props.pieceInfo} />)}
-        </div>
-        <div className='dot' style={{ visibility: props.legalSquares.includes(props.squareIndex) && props.pieceInfo == null ? 'visible' : 'hidden' }}>●</div>
-        <Piece pieceInfo={props.pieceInfo} className='piece' />
-    </div>
+    );
 }
+
