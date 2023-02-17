@@ -20,27 +20,9 @@
     transform: translate(-50%, -50%);
 }
 
-.selected-square {
-    background-color: #5a6d77;
-}
-
-h1::first-letter {
-    text-transform: capitalize;
-}
-
 h1 {
     position: absolute;
     left: 50%;
     margin-left: -100px;
     color: white;
-}
-
-
-
-.black-bishop {
-    background-image: url('./default/bB.svg');
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    background-position: center;
-    background-size: cover;
 }

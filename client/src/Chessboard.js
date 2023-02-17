@@ -2,27 +2,16 @@ import { React, useState } from 'react'
 import './Chessboard.css'
 import Square from './Square'
 
-const chessboard = new Map()
-const files = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-const pieces = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'];
-
-for (let rank = 1; rank < 9; rank++) {
-    for (let file = 0; file < 8; file++) {
-        chessboard[files[file] + rank] = (rank < 2 || rank > 7) ? pieces[file] : (rank === 2 || rank === 7) ? 'P' : '';
-        if (rank == 1 || rank == 2) {
-            chessboard[files[file] + rank] = 'w' + chessboard[files[file] + rank]
-        } else if (rank == 7 || rank == 8) {
-            chessboard[files[file] + rank] = 'b' + chessboard[files[file] + rank]
-        }
-    }
-}
-
 let turn = "w";
 let selectedPiece = "";
 let whiteKingHasMoved = false;
+let isWhiteKingInCheck = false;
+let isBlackKingInCheck = false;
+let blackKingSquareIndex = 4;
+let whiteKingSquareIndex = 60;
 
 export default function Chessboard() {
-    const [board, setBoard] = useState(chessboard);
+    const [board, setBoard] = useState(boardInit());
     const [selectedSquareIndex, setSelectedSquareIndex] = useState(-1)
     const [legalSquares, setLegalSquares] = useState([]);
 
@@ -39,6 +28,7 @@ export default function Chessboard() {
                             squareIndex = {i}
                             selected={selectedSquareIndex == i}
                             handleSquareClick={handleSquareClick}
+                            handlePieceDrop={handlePieceDrop}
                             legalSquares={legalSquares} />
                     );
                 })}
@@ -47,6 +37,28 @@ export default function Chessboard() {
         </>
     );
 
+    function boardInit() {
+        const chessboard = new Map()
+        const files = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+        const pieces = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'];
+
+
+        for (let rank = 1; rank < 9; rank++) {
+            for (let file = 0; file < 8; file++) {
+                let square = files[file] + rank;
+                let piece = (rank < 2 || rank > 7) ? pieces[file] : (rank === 2 || rank === 7) ? 'P' : '';
+
+                if (rank == 1 || rank == 2) {
+                    chessboard[square] = 'w' + piece;
+                } else if (rank == 7 || rank == 8) {
+                    chessboard[square] = 'b' + piece;
+                } else {
+                    chessboard[square] = '';
+                }
+            }
+        }
+        return chessboard;
+    }
 
     function indexToSquare(index) {
         const file = String.fromCharCode(97 + index % 8).toUpperCase();
@@ -61,255 +73,226 @@ export default function Chessboard() {
                             'white-square' : 'black-square')}`
     }
 
-    function handleSquareClick(squareIndex, event, data) {
+    function handleSquareClick(clickedSquareIndex) {
         var newBoard = {};
         for (var i in board) {
             newBoard[i] = board[i];
         }
 
-        let selectedPieceColor = selectedPiece == '' ? '' : selectedPiece.charAt(0);
-        let pieceToTakeColor = board[indexToSquare(squareIndex)] == '' ? '' : board[indexToSquare(squareIndex)].charAt(0);
+        const selectedPieceColor = selectedPiece ? selectedPiece[0] : '';
+        const squareContents = board[indexToSquare(clickedSquareIndex)];
+        const squareColor = squareContents ? squareContents[0] : '';
 
-        if ((selectedPiece != '' || board[indexToSquare(squareIndex)] != '') && squareIndex != selectedSquareIndex) {
-            if (board[indexToSquare(squareIndex)] != '' && turn == pieceToTakeColor) {
-                selectedPiece = board[indexToSquare(squareIndex)];
-                setSelectedSquareIndex(squareIndex);
-                getLegalMoves(squareIndex);
-            } else if ((board[indexToSquare(squareIndex)] == '' || selectedPiece != '') && selectedPieceColor != pieceToTakeColor && selectedPieceColor == turn) {
-                if (legalSquares.includes(squareIndex))
-                    renderMove(squareIndex, board)
+        const isPieceSelected = selectedPiece != '';
+        const isSquareOccupied = squareContents != '';
+        const isPieceOfCorrectColor = selectedPieceColor == turn;
+        const isSquareNotSelected = clickedSquareIndex != selectedSquareIndex;
+        const isPieceInSquareOfCorrectColor = squareColor == turn;
+        const isLegalMove = legalSquares.includes(clickedSquareIndex);
+
+        if (isSquareNotSelected && (isPieceSelected || (isSquareOccupied && isPieceInSquareOfCorrectColor))) {
+            if (isSquareOccupied && isPieceInSquareOfCorrectColor) {
+                selectedPiece = squareContents;
+                setSelectedSquareIndex(clickedSquareIndex);
+                getLegalMoves(clickedSquareIndex);
+            } else if (isPieceOfCorrectColor && isLegalMove) {
+                renderMove(clickedSquareIndex, board);
+                setSelectedSquareIndex(clickedSquareIndex);
             }
-
-            setSelectedSquareIndex(squareIndex);
-        }
-
-        if (event != null) {
-            console.log(event)
-            event.target.appendChild(document.getElementById(data.piece + data.squareIndex));
         }
     }
 
-    function getLegalMoves(squareIndex) {
-        let legalSquares = [];
-        let squareToMoveIsEmpty;
-        let toCheck;
+    function handlePieceDrop(event, data) {
+        const targetSquareIndex = parseInt(event.target.id);
+
+        if (!legalSquares.includes(targetSquareIndex)) {
+            return;
+        }
+
+        renderMove(targetSquareIndex, { ...board })
+        setSelectedSquareIndex(event.target.id);
+    }
+
+    function getLegalMoves(pieceSquareIndex) {
+        let legalMoves = [];
 
         if (selectedPiece.includes('P')) {
-            turn == 'w' ? toCheck = [-16, -8, -9, -7] : toCheck = [16, 8, 9, 7]
-
-            for (let i = 0; i < toCheck.length; i++) {
-                console.log('here')
-                squareToMoveIsEmpty = board[indexToSquare(squareIndex + toCheck[i])] == '';
-                if ((i == 0 && ((squareIndex > 47 && squareIndex < 56) || (squareIndex > 7 && squareIndex < 16))) || i == 1) {
-                    if (squareToMoveIsEmpty) legalSquares.push(squareIndex + toCheck[i])
-                } else {
-                    let pieceToTakeColor = String(board[indexToSquare(squareIndex + toCheck[i])]).charAt(0)
-                    if (!squareToMoveIsEmpty && pieceToTakeColor != turn) legalSquares.push(squareIndex + toCheck[i])
-                }
-            }
+            legalMoves = getLegalPawnMoves(pieceSquareIndex)
         } else if (selectedPiece.includes('N')) {
-            toCheck = [10, 17, 15, -6, -10, -15, -17, 6];
-            
-            for (let i = 0; i < toCheck.length; i++) {
-                let pieceToTakeColor = String(board[indexToSquare(squareIndex + toCheck[i])]).charAt(0)
-                squareToMoveIsEmpty = board[indexToSquare(squareIndex + toCheck[i])] == '' ? true : false
-                let moveIsToValidFile = Math.abs((squareIndex % 8) - ((squareIndex + toCheck[i]) % 8)) <= 2;
-                if (((!squareToMoveIsEmpty && pieceToTakeColor != turn) || squareToMoveIsEmpty) && moveIsToValidFile) {
-                    legalSquares.push(squareIndex + toCheck[i])
-                }
-            }
+            legalMoves = getLegalKnightMoves(pieceSquareIndex)
         } else if (selectedPiece.includes('B')) {
-            legalSquares = legalBishopMoves(squareIndex)
+            legalMoves = getLegalBishopMoves(pieceSquareIndex)
         } else if (selectedPiece.includes('R')) {
-            legalSquares = legalRookMoves(squareIndex)
+            legalMoves = getLegalRookMoves(pieceSquareIndex)
         } else if (selectedPiece.includes('Q')) {
-            legalSquares = legalRookMoves(squareIndex);
-            legalSquares = legalSquares.concat(legalBishopMoves(squareIndex));
+            legalMoves = getLegalRookMoves(pieceSquareIndex).concat(getLegalBishopMoves(pieceSquareIndex));
         } else {
-            toCheck = [-9, -8, -7, -1, 1, 7, 8, 9];
+            legalMoves = getLegalKingMoves(pieceSquareIndex);
+        }
 
-            for (let i = 0; i < toCheck.length; i++) {
-                let pieceToTakeColor = String(board[indexToSquare(squareIndex + toCheck[i])]).charAt(0);
-                squareToMoveIsEmpty = board[indexToSquare(squareIndex + toCheck[i])] == '' ? true : false
-                let moveIsToValidFile = Math.abs((squareIndex % 8) - ((squareIndex + toCheck[i]) % 8)) <= 1;
-                if (((!squareToMoveIsEmpty && pieceToTakeColor != turn) || squareToMoveIsEmpty) && moveIsToValidFile) {
-                    legalSquares.push(squareIndex + toCheck[i])
+        setLegalSquares(legalMoves);
+    }
+
+    function getLegalRookMoves(pieceSquareIndex) {
+        let moves = [];
+        let x = Math.floor(pieceSquareIndex / 8);
+        let y = pieceSquareIndex % 8;
+
+        let directions = [[-1, 0], [1, 0], [0, 1], [0, -1]];
+        for (let i = 0; i < directions.length; i++) {
+            let dx = directions[i][0];
+            let dy = directions[i][1];
+            let targetX = x + dx;
+            let targetY = y + dy;
+            while (targetX >= 0 && targetX < 8 && targetY >= 0 && targetY < 8) {
+                let target = targetX * 8 + targetY;
+                let pieceToTakeColor = String(board[indexToSquare(target)]).charAt(0);
+                if (board[indexToSquare(target)] === '') {
+                    moves.push(target);
+                } else if (pieceToTakeColor != turn) {
+                    moves.push(target);
+                    break;
+                } else {
+                    break;
+                }
+                targetX += dx;
+                targetY += dy;
+            }
+        }
+        return moves;
+    }
+
+    function getLegalBishopMoves(pieceSquareIndex) {
+        let moves = [];
+        let x = Math.floor(pieceSquareIndex / 8);
+        let y = pieceSquareIndex % 8;
+
+        const directions = [
+            [-1, 1],
+            [-1, -1],
+            [1, 1],
+            [1, -1]
+        ];
+
+        for (const [dx, dy] of directions) {
+            let i = x + dx, j = y + dy;
+            while (i >= 0 && i < 8 && j >= 0 && j < 8) {
+                let target = i * 8 + j;
+                let pieceToTakeColor = String(board[indexToSquare(target)]).charAt(0);
+                if (board[indexToSquare(target)] === '') {
+                    moves.push(target);
+                } else if (pieceToTakeColor !== turn) {
+                    moves.push(target);
+                    break;
+                } else {
+                    break;
+                }
+                i += dx;
+                j += dy;
+            }
+        }
+        return moves;
+    }
+
+    function getLegalPawnMoves(pieceSquareIndex) {
+        let squaresToCheck = turn == 'w' ? [-8, -9, -7] : [8, 9, 7];
+        let legalSquares = [];
+
+        squaresToCheck.forEach(offset => {
+            let targetSquare = pieceSquareIndex + offset;
+            let squareContents = board[indexToSquare(targetSquare)];
+            let squareColor = squareContents.charAt(0);
+
+            if (offset === -8 || offset === 8) {
+                if (squareContents === '') {
+                    legalSquares.push(targetSquare);
+                }
+            } else if (squareContents !== '' && squareColor !== turn) {
+                legalSquares.push(targetSquare);
+            }
+
+            targetSquare = (turn === 'w') ? pieceSquareIndex - 16 : pieceSquareIndex + 16;
+
+            if ((turn === 'w' && pieceSquareIndex > 47 && pieceSquareIndex < 56) ||
+                (turn === 'b' && pieceSquareIndex > 7 && pieceSquareIndex < 16)) {
+                let squareContents = board[indexToSquare(targetSquare)];
+                if (squareContents === '') {
+                    if (turn == 'w' && board[indexToSquare(pieceSquareIndex - 8)] == '' ||
+                        turn == 'b' && board[indexToSquare(pieceSquareIndex + 8)] == '')
+                        legalSquares.push(targetSquare);
                 }
             }
+        });
 
-            if (squareIndex == 60 && board[indexToSquare(61)] == '' && board[indexToSquare(62)] == '' 
-                && String(board[indexToSquare(63)].includes('R')) && !whiteKingHasMoved) {
-                    legalSquares.push(62);
-            }
-        }
-
-        setLegalSquares(legalSquares);
+        return legalSquares;
     }
 
-    function legalRookMoves(position) {
-        let moves = [];
-        let x = Math.floor(position / 8);
-        let y = position % 8;
+    function getLegalKnightMoves(pieceSquareIndex) {
+        let squaresToCheck = [10, 17, 15, -6, -10, -15, -17, 6];
+        let legalSquares = [];
 
-        // Check moves in the up direction
-        let i = x - 1;
-        while (i >= 0) {
-            let target = i * 8 + y;
-            let pieceToTakeColor = String(board[indexToSquare(target)]).charAt(0);
-            if (board[indexToSquare(target)] === '') {
-                moves.push(target);
-            } else if (pieceToTakeColor != turn) {
-                moves.push(target);
-                break;
-            } else {
-                break;
+        for (let i = 0; i < squaresToCheck.length; i++) {
+            let targetPieceColor = String(board[indexToSquare(pieceSquareIndex + squaresToCheck[i])]).charAt(0)
+            let isTargetSquareEmpty = board[indexToSquare(pieceSquareIndex + squaresToCheck[i])] == '' ? true : false
+            let isMoveToValidFile = Math.abs((pieceSquareIndex % 8) - ((pieceSquareIndex + squaresToCheck[i]) % 8)) <= 2;
+
+            if (((!isTargetSquareEmpty && targetPieceColor != turn) || isTargetSquareEmpty) && isMoveToValidFile) {
+                legalSquares.push(pieceSquareIndex + squaresToCheck[i])
             }
-            i--;
         }
-        // Check moves in the down direction
-        i = x + 1;
-        while (i < 8) {
-            let target = i * 8 + y;
-            let pieceToTakeColor = String(board[indexToSquare(target)]).charAt(0);
-            if (board[indexToSquare(target)] === '') {
-                moves.push(target);
-            } else if (pieceToTakeColor != turn) {
-                moves.push(target);
-                break;
-            } else {
-                break;
-            }
-            i++;
-        }
-        // Check moves in the right direction
-        let j = y + 1;
-        while (j < 8) {
-            let target = x * 8 + j;
-            let pieceToTakeColor = String(board[indexToSquare(target)]).charAt(0);
-            if (board[indexToSquare(target)] === '') {
-                moves.push(target);
-            } else if (pieceToTakeColor != turn) {
-                moves.push(target);
-                break;
-            } else {
-                break;
-            }
-            j++;
-        }
-        
-        // Check moves in the left direction
-        j = y - 1;
-        while (j >= 0) {
-            let target = x * 8 + j;
-            let pieceToTakeColor = String(board[indexToSquare(target)]).charAt(0);
-            if (board[indexToSquare(target)] === '') {
-                moves.push(target);
-            } else if (pieceToTakeColor != turn) {
-                moves.push(target);
-                break;
-            } else {
-                break;
-            }
-            j--;
-        }
-        return moves;
+
+        return legalSquares;
     }
 
+    function getLegalKingMoves(pieceSquareIndex) {
+        let squaresToCheck = [-9, -8, -7, -1, 1, 7, 8, 9];
+        let legalMoves = []
 
-    function legalBishopMoves(position) {
-        let moves = [];
-        let x = Math.floor(position / 8);
-        let y = position % 8;
+        for (let i = 0; i < squaresToCheck.length; i++) {
+            let pieceToTakeColor = String(board[indexToSquare(pieceSquareIndex + squaresToCheck[i])]).charAt(0);
+            let squareToMoveIsEmpty = board[indexToSquare(pieceSquareIndex + squaresToCheck[i])] == '' ? true : false
+            let moveIsToValidFile = Math.abs((pieceSquareIndex % 8) - ((pieceSquareIndex + squaresToCheck[i]) % 8)) <= 1;
 
-        // Check moves in the up-right direction
-        let i = x - 1, j = y + 1;
-        while (i >= 0 && j < 8) {
-            let target = i * 8 + j;
-            let pieceToTakeColor = String(board[indexToSquare(target)]).charAt(0);
-            if (board[indexToSquare(target)] === '') {
-                moves.push(target);
-            } else if (pieceToTakeColor != turn) {
-                moves.push(target);
-                break;
-            } else {
-                break;
+            if (((!squareToMoveIsEmpty && pieceToTakeColor != turn) || squareToMoveIsEmpty) && moveIsToValidFile) {
+                legalMoves.push(pieceSquareIndex + squaresToCheck[i])
             }
-            i--;
-            j++;
         }
-        // Check moves in the up-left direction
-        i = x - 1;
-        j = y - 1;
-        while (i >= 0 && j >= 0) {
-            let target = i * 8 + j;
-            let pieceToTakeColor = String(board[indexToSquare(target)]).charAt(0);
-            if (board[indexToSquare(target)] === '') {
-                moves.push(target);
-            } else if (pieceToTakeColor != turn) {
-                moves.push(target);
-                break;
-            } else {
-                break;
-            }
-            i--;
-            j--;
-        }
-        // Check moves in the down-right direction
-        i = x + 1;
-        j = y + 1;
-        while (i < 8 && j < 8) {
-            let target = i * 8 + j;
-            let pieceToTakeColor = String(board[indexToSquare(target)]).charAt(0);
-            if (board[indexToSquare(target)] === '') {
-                moves.push(target);
-            } else if (pieceToTakeColor != turn) {
-                moves.push(target);
-                break;
-            } else {
-                break;
-            }
-            i++;
-            j++;
-        }
-        // Check moves in the down-left direction
-        i = x + 1;
-        j = y - 1;
-        while (i < 8 && j >= 0) {
-            let target = i * 8 + j;
-            let pieceToTakeColor = String(board[indexToSquare(target)]).charAt(0);
-            if (board[indexToSquare(target)] === '') {
-                moves.push(target);
-            } else if (pieceToTakeColor != turn) {
-                moves.push(target);
-                break;
-            } else {
-                break;
-            }
-            i++;
-            j--;
-        }
-        return moves;
+
+        return legalMoves;
     }
 
-    function renderMove(newSquareIndex, newBoard) {
-        if (selectedPiece.includes("K") && newSquareIndex != 62) {
-            whiteKingHasMoved = true;
-        } else if (selectedPiece.includes("K") && newSquareIndex == 62) {
-            newBoard[indexToSquare(63)] = '';
-            newBoard[indexToSquare(62)] = selectedPiece;
-            newBoard[indexToSquare(61)] = turn + 'R';
-            newBoard[indexToSquare(60)] = '';
-        } else {
-            newBoard[indexToSquare(newSquareIndex)] = board[indexToSquare(selectedSquareIndex)];
-            newBoard[indexToSquare(selectedSquareIndex)] = '';
+    function renderMove(targetSquareIndex, board) {
+        if (selectedPiece == 'bK') {
+            blackKingSquareIndex = targetSquareIndex;
+        } else if (selectedPiece == 'wK') {
+            whiteKingSquareIndex = targetSquareIndex;
         }
 
-        setBoard(newBoard);
+        console.log(isMoveACheck(targetSquareIndex, board))
+        board[indexToSquare(targetSquareIndex)] = board[indexToSquare(selectedSquareIndex)];
+        board[indexToSquare(selectedSquareIndex)] = '';
+
+        setBoard(board);
         turn = turn == 'w' ? 'b' : 'w';
-
-
 
         selectedPiece = "";
         setLegalSquares([]);
+    }
+
+    function isMoveACheck(squareIndexOfMove) {
+        const opponentKingSquareIndex = turn == 'w' ? blackKingSquareIndex : whiteKingSquareIndex;
+
+        if (selectedPiece.includes('P')) {
+            return getLegalPawnMoves(squareIndexOfMove).includes(opponentKingSquareIndex);
+        } else if (selectedPiece.includes('N')) {
+            return getLegalKnightMoves(squareIndexOfMove).includes(opponentKingSquareIndex);
+        } else if (selectedPiece.includes('R')) {
+            return getLegalRookMoves(squareIndexOfMove).includes(opponentKingSquareIndex);
+        } else if (selectedPiece.includes('B')) {
+            return getLegalBishopMoves(squareIndexOfMove).includes(opponentKingSquareIndex);
+        } else if (selectedPiece.includes('Q')) {
+            return getLegalRookMoves(squareIndexOfMove).includes(opponentKingSquareIndex) ||
+                getLegalBishopMoves(squareIndexOfMove).includes(opponentKingSquareIndex);
+        }
     }
 }
