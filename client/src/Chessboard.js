@@ -72,7 +72,7 @@ export default function Chessboard() {
                         'black-square' : 'white-square') : (index % 2 === 0 ?
                             'white-square' : 'black-square')}`
     }
-
+ 
     function handleSquareClick(clickedSquareIndex) {
         var newBoard = {};
         for (var i in board) {
