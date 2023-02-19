@@ -8,18 +8,18 @@
     background-color: transparent;
 }
 
-.bB { background-image: url('./default/bB.svg'); }
-.wB { background-image: url('./default/wB.svg'); }
-.bK { background-image: url('./default/bK.svg'); }
-.wK { background-image: url('./default/wK.svg'); }
-.bN { background-image: url('./default/bN.svg'); }
-.wN { background-image: url('./default/wN.svg'); }
-.bP { background-image: url('./default/bP.svg'); }
-.wP { background-image: url('./default/wP.svg'); }
-.bQ { background-image: url('./default/bQ.svg'); }
-.wQ { background-image: url('./default/wQ.svg'); }
-.bR { background-image: url('./default/bR.svg'); }
-.wR { background-image: url('./default/wR.svg'); }
+.bB { background-image: url('src/piece-icons/bB.svg'); }
+.wB { background-image: url('src/piece-icons/wB.svg'); }
+.bK { background-image: url('src/piece-icons/bK.svg'); }
+.wK { background-image: url('src/piece-icons/wK.svg'); }
+.bN { background-image: url('src/piece-icons/bN.svg'); }
+.wN { background-image: url('src/piece-icons/wN.svg'); }
+.bP { background-image: url('src/piece-icons/bP.svg'); }
+.wP { background-image: url('src/piece-icons/wP.svg'); }
+.bQ { background-image: url('src/piece-icons/bQ.svg'); }
+.wQ { background-image: url('src/piece-icons/wQ.svg'); }
+.bR { background-image: url('src/piece-icons/bR.svg'); }
+.wR { background-image: url('src/piece-icons/wR.svg'); }
 
 .white-square {
     background-color: #DEE3E6;

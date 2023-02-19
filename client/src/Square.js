@@ -1,16 +1,13 @@
-import { React, useState } from 'react'
+import { React } from 'react'
 import './Square.css'
 
 export default function Square(props) {
-    const [pieceOver, setPieceOver] = useState(false)
-
     const handleDragStart = (event, props) => {
         event.dataTransfer.setData("props", JSON.stringify(props));
     };
 
     const handleDragOver = (event) => {
         event.preventDefault();
-        setPieceOver(true);
       };
 
     const handleDrop = (event) => {

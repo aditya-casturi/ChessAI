@@ -26,7 +26,7 @@ export default function Chessboard() {
                             squareColor={squareColor}
                             key={indexToSquare(i)}
                             squareIndex = {i}
-                            selected={selectedSquareIndex == i}
+                            selected={selectedSquareIndex === i}
                             handleSquareClick={handleSquareClick}
                             handlePieceDrop={handlePieceDrop}
                             legalSquares={legalSquares} />
@@ -48,9 +48,9 @@ export default function Chessboard() {
                 let square = files[file] + rank;
                 let piece = (rank < 2 || rank > 7) ? pieces[file] : (rank === 2 || rank === 7) ? 'P' : '';
 
-                if (rank == 1 || rank == 2) {
+                if (rank === 1 || rank === 2) {
                     chessboard[square] = 'w' + piece;
-                } else if (rank == 7 || rank == 8) {
+                } else if (rank === 7 || rank === 8) {
                     chessboard[square] = 'b' + piece;
                 } else {
                     chessboard[square] = '';
@@ -74,8 +74,8 @@ export default function Chessboard() {
     }
  
     function handleSquareClick(clickedSquareIndex) {
-        var newBoard = {};
-        for (var i in board) {
+        const newBoard = {};
+        for (const i in board) {
             newBoard[i] = board[i];
         }
 
@@ -83,11 +83,11 @@ export default function Chessboard() {
         const squareContents = board[indexToSquare(clickedSquareIndex)];
         const squareColor = squareContents ? squareContents[0] : '';
 
-        const isPieceSelected = selectedPiece != '';
-        const isSquareOccupied = squareContents != '';
-        const isPieceOfCorrectColor = selectedPieceColor == turn;
-        const isSquareNotSelected = clickedSquareIndex != selectedSquareIndex;
-        const isPieceInSquareOfCorrectColor = squareColor == turn;
+        const isPieceSelected = selectedPiece !== '';
+        const isSquareOccupied = squareContents !== '';
+        const isPieceOfCorrectColor = selectedPieceColor === turn;
+        const isSquareNotSelected = clickedSquareIndex !== selectedSquareIndex;
+        const isPieceInSquareOfCorrectColor = squareColor === turn;
         const isLegalMove = legalSquares.includes(clickedSquareIndex);
 
         if (isSquareNotSelected && (isPieceSelected || (isSquareOccupied && isPieceInSquareOfCorrectColor))) {
@@ -114,7 +114,7 @@ export default function Chessboard() {
     }
 
     function getLegalMoves(pieceSquareIndex) {
-        let legalMoves = [];
+        let legalMoves;
 
         if (selectedPiece.includes('P')) {
             legalMoves = getLegalPawnMoves(pieceSquareIndex)
@@ -149,7 +149,7 @@ export default function Chessboard() {
                 let pieceToTakeColor = String(board[indexToSquare(target)]).charAt(0);
                 if (board[indexToSquare(target)] === '') {
                     moves.push(target);
-                } else if (pieceToTakeColor != turn) {
+                } else if (pieceToTakeColor !== turn) {
                     moves.push(target);
                     break;
                 } else {
@@ -195,7 +195,7 @@ export default function Chessboard() {
     }
 
     function getLegalPawnMoves(pieceSquareIndex) {
-        let squaresToCheck = turn == 'w' ? [-8, -9, -7] : [8, 9, 7];
+        let squaresToCheck = turn === 'w' ? [-8, -9, -7] : [8, 9, 7];
         let legalSquares = [];
 
         squaresToCheck.forEach(offset => {
@@ -217,8 +217,8 @@ export default function Chessboard() {
                 (turn === 'b' && pieceSquareIndex > 7 && pieceSquareIndex < 16)) {
                 let squareContents = board[indexToSquare(targetSquare)];
                 if (squareContents === '') {
-                    if (turn == 'w' && board[indexToSquare(pieceSquareIndex - 8)] == '' ||
-                        turn == 'b' && board[indexToSquare(pieceSquareIndex + 8)] == '')
+                    if (turn === 'w' && board[indexToSquare(pieceSquareIndex - 8)] === '' ||
+                        turn === 'b' && board[indexToSquare(pieceSquareIndex + 8)] === '')
                         legalSquares.push(targetSquare);
                 }
             }
@@ -233,10 +233,10 @@ export default function Chessboard() {
 
         for (let i = 0; i < squaresToCheck.length; i++) {
             let targetPieceColor = String(board[indexToSquare(pieceSquareIndex + squaresToCheck[i])]).charAt(0)
-            let isTargetSquareEmpty = board[indexToSquare(pieceSquareIndex + squaresToCheck[i])] == '' ? true : false
+            let isTargetSquareEmpty = board[indexToSquare(pieceSquareIndex + squaresToCheck[i])] === ''
             let isMoveToValidFile = Math.abs((pieceSquareIndex % 8) - ((pieceSquareIndex + squaresToCheck[i]) % 8)) <= 2;
 
-            if (((!isTargetSquareEmpty && targetPieceColor != turn) || isTargetSquareEmpty) && isMoveToValidFile) {
+            if (((!isTargetSquareEmpty && targetPieceColor !== turn) || isTargetSquareEmpty) && isMoveToValidFile) {
                 legalSquares.push(pieceSquareIndex + squaresToCheck[i])
             }
         }
@@ -250,10 +250,10 @@ export default function Chessboard() {
 
         for (let i = 0; i < squaresToCheck.length; i++) {
             let pieceToTakeColor = String(board[indexToSquare(pieceSquareIndex + squaresToCheck[i])]).charAt(0);
-            let squareToMoveIsEmpty = board[indexToSquare(pieceSquareIndex + squaresToCheck[i])] == '' ? true : false
+            let squareToMoveIsEmpty = board[indexToSquare(pieceSquareIndex + squaresToCheck[i])] === ''
             let moveIsToValidFile = Math.abs((pieceSquareIndex % 8) - ((pieceSquareIndex + squaresToCheck[i]) % 8)) <= 1;
 
-            if (((!squareToMoveIsEmpty && pieceToTakeColor != turn) || squareToMoveIsEmpty) && moveIsToValidFile) {
+            if (((!squareToMoveIsEmpty && pieceToTakeColor !== turn) || squareToMoveIsEmpty) && moveIsToValidFile) {
                 legalMoves.push(pieceSquareIndex + squaresToCheck[i])
             }
         }
@@ -262,9 +262,9 @@ export default function Chessboard() {
     }
 
     function renderMove(targetSquareIndex, board) {
-        if (selectedPiece == 'bK') {
+        if (selectedPiece === 'bK') {
             blackKingSquareIndex = targetSquareIndex;
-        } else if (selectedPiece == 'wK') {
+        } else if (selectedPiece === 'wK') {
             whiteKingSquareIndex = targetSquareIndex;
         }
 
@@ -273,14 +273,14 @@ export default function Chessboard() {
         board[indexToSquare(selectedSquareIndex)] = '';
 
         setBoard(board);
-        turn = turn == 'w' ? 'b' : 'w';
+        turn = turn === 'w' ? 'b' : 'w';
 
         selectedPiece = "";
         setLegalSquares([]);
     }
 
     function isMoveACheck(squareIndexOfMove) {
-        const opponentKingSquareIndex = turn == 'w' ? blackKingSquareIndex : whiteKingSquareIndex;
+        const opponentKingSquareIndex = turn === 'w' ? blackKingSquareIndex : whiteKingSquareIndex;
 
         if (selectedPiece.includes('P')) {
             return getLegalPawnMoves(squareIndexOfMove).includes(opponentKingSquareIndex);
