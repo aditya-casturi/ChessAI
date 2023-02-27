@@ -8,18 +8,18 @@
     background-color: transparent;
 }
 
-.bB { background-image: url('src/piece-icons/bB.svg'); }
-.wB { background-image: url('src/piece-icons/wB.svg'); }
-.bK { background-image: url('src/piece-icons/bK.svg'); }
-.wK { background-image: url('src/piece-icons/wK.svg'); }
-.bN { background-image: url('src/piece-icons/bN.svg'); }
-.wN { background-image: url('src/piece-icons/wN.svg'); }
-.bP { background-image: url('src/piece-icons/bP.svg'); }
-.wP { background-image: url('src/piece-icons/wP.svg'); }
-.bQ { background-image: url('src/piece-icons/bQ.svg'); }
-.wQ { background-image: url('src/piece-icons/wQ.svg'); }
-.bR { background-image: url('src/piece-icons/bR.svg'); }
-.wR { background-image: url('src/piece-icons/wR.svg'); }
+.bB { background-image: url('piece-icons/bB.svg'); }
+.wB { background-image: url('piece-icons/wB.svg'); }
+.bK { background-image: url('piece-icons/bK.svg'); }
+.wK { background-image: url('piece-icons/wK.svg'); }
+.bN { background-image: url('piece-icons/bN.svg'); }
+.wN { background-image: url('piece-icons/wN.svg'); }
+.bP { background-image: url('piece-icons/bP.svg'); }
+.wP { background-image: url('piece-icons/wP.svg'); }
+.bQ { background-image: url('piece-icons/bQ.svg'); }
+.wQ { background-image: url('piece-icons/wQ.svg'); }
+.bR { background-image: url('piece-icons/bR.svg'); }
+.wR { background-image: url('piece-icons/wR.svg'); }
 
 .white-square {
     background-color: #DEE3E6;
@@ -40,6 +40,6 @@
     text-align: center;
     color: #5A6D77;
     line-height: 75px;
-    font-size: 20pt;
+    font-size: 30pt;
     cursor: default;
 }

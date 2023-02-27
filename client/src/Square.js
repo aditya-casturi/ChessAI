@@ -1,7 +1,7 @@
-import { React } from 'react'
+import {React} from 'react'
 import './Square.css'
 
-export default function Square(props) {
+export default function Square(props){
     const handleDragStart = (event, props) => {
         event.dataTransfer.setData("props", JSON.stringify(props));
     };
@@ -35,4 +35,3 @@ export default function Square(props) {
         </div>
     );
 }
-
