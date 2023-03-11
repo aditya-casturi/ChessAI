@@ -7,14 +7,17 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="chessai-backend" />
+        <module name="chessai" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="chessai" target="17" />
       <module name="chessai-backend" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="chessai" options="-parameters" />
       <module name="chessai-backend" options="-parameters" />
     </option>
   </component>

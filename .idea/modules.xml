@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/ChessAI.iml" filepath="$PROJECT_DIR$/.idea/ChessAI.iml" />
+      <module fileurl="file://$PROJECT_DIR$/backend/chessai-backend/chessai.iml" filepath="$PROJECT_DIR$/backend/chessai-backend/chessai.iml" />
       <module fileurl="file://$PROJECT_DIR$/backend/chessai-backend/chessai-backend.iml" filepath="$PROJECT_DIR$/backend/chessai-backend/chessai-backend.iml" />
     </modules>
   </component>

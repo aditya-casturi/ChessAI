@@ -2,6 +2,7 @@ package com.chessai.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Position {
     private String turn;
@@ -14,12 +15,15 @@ public class Position {
 
     public String[] board;
 
+    private String keyString;
+
     public Position(String turn, Position parent, String[] board, Move lastMove) {
         this.turn = turn;
         this.parent = parent;
         this.board = board;
         this.children = new ArrayList<>();
         this.lastMove = lastMove;
+        this.keyString = String.join(" ", board);
     }
 
     public String getTurn() {
@@ -44,5 +48,22 @@ public class Position {
 
     public void setScore(int score) {
         this.score = score;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Position)) return false;
+        Position p = (Position) o;
+        String thisBoardRepresentation = String.join(" ", board);
+        String otherBoardRepresentation = String.join(" ", p.board);
+        if (thisBoardRepresentation.equals(otherBoardRepresentation)) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(keyString);
     }
 }

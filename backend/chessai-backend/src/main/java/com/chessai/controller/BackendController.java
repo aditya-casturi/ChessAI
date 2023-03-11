@@ -4,33 +4,54 @@ import com.chessai.model.Move;
 import com.chessai.model.Position;
 import com.chessai.utils.Eval;
 import com.chessai.utils.LegalMoves;
+import com.google.common.base.Stopwatch;
 import com.google.gson.Gson;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.chessai.utils.Eval.boardEval;
 import static com.chessai.utils.LegalMoves.*;
 @Controller
 @RequestMapping("/api")
 public class BackendController {
+    final int DEPTH = 5;
+    Map<Position, Integer> transpositionTable = new HashMap<>();
+    public static List<Position> transpositions = new ArrayList<>();
+
     @RequestMapping(value = "/getComputerMove", method = RequestMethod.POST)
     @ResponseBody
     @CrossOrigin(origins = "http://localhost:3000")
     public String getComputerMove(@RequestBody Map<String, String> requestBody) {
         Gson gson = new Gson();
+
         String json = requestBody.get("jsonPayload");
         String turn = requestBody.get("turn");
+        int moveNumber = Integer.parseInt(requestBody.get("moveNumber"));
         String[] board = gson.fromJson(json, String[].class);
+
+
         Position rootPosition = new Position(turn, null, board, null);
-        List<Position> leaves = new ArrayList<>();
-        buildPositionsTree(rootPosition, 4, leaves);
+        Timer timer = new Timer();
 
-        Map<Position, Integer> transpositionTable = new HashMap<>();
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        buildPositionsTree(rootPosition, DEPTH);
+        stopwatch.stop();
+        System.out.println("Time elapsed to create tree: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        stopwatch.reset();
 
+        stopwatch.start();
         // for computer move, alpha=MIN_VALUE, beta=MAX_VALUE, maximizingPlayer=true
         int bestScore = minimax(rootPosition, Integer.MIN_VALUE, Integer.MAX_VALUE, false, transpositionTable);
+        stopwatch.stop();
+        System.out.println("Time elapsed to execute minimax: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
         Position bestChild = null;
         for (Position child : rootPosition.children) {
             if (child.getScore() == rootPosition.getScore()) {
@@ -47,17 +68,38 @@ public class BackendController {
         return gson.toJson(returnData);
     }
 
+    private static Position searchForBoard(Position node, String[] boardToSearchFor) {
+        if (node == null) {
+            return null;
+        }
+
+        if (Arrays.equals(node.board, boardToSearchFor)) {
+            return node;
+        }
+
+        for (Position child : node.children) {
+            Position matchingPosition = searchForBoard(child, boardToSearchFor);
+            if (matchingPosition != null) {
+                return matchingPosition;
+            }
+        }
+
+        return null;
+    }
+
+
     private static int minimax(Position position, int alpha, int beta, boolean maximizingPlayer, Map<Position, Integer> transpositionTable) {
         if (position.children.size() == 0) {
-            if (transpositionTable.containsKey(position))
+            if (transpositionTable.containsKey(position)) {
                 return transpositionTable.get(position);
+            }
             return position.getScore();
         }
 
         int bestEval = maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE;
         for (Position child : position.children) {
             int eval;
-            if (transpositionTable.containsKey(child)) {
+            if (transpositionTable.get(child) != null) {
                 eval = transpositionTable.get(child);
             } else {
                 eval = minimax(child, alpha, beta, !maximizingPlayer, transpositionTable);
@@ -76,19 +118,19 @@ public class BackendController {
             }
         }
         position.setScore(bestEval);
+        position.setPositionEvaluated(true);
         return bestEval;
     }
 
 
-
-    private static void buildPositionsTree(Position position, int depth, List<Position> leaves) {
+    private static void buildPositionsTree(Position position, int depth) {
         if (depth == 0) {
             position.setScore(boardEval(position.board));
-            leaves.add(position);
             return;
         }
 
         List<Move> legalMoves = getLegalMoves(position);
+
         String[] board = position.board;
         String turn = position.getTurn();
 
@@ -100,8 +142,13 @@ public class BackendController {
             else {
                 newBoard = capture(newBoard, legalMove.getFromSquare(), legalMove.getToSquare());
             }
-            position.children.add(new Position(turn, position, newBoard, legalMove));
-            buildPositionsTree(position.children.get(position.children.size() - 1), depth-1, leaves);
+            Position newPos = new Position(turn, position, newBoard, legalMove);
+            if (transpositions.contains(newPos)) {
+                position.children.add(transpositions.get(transpositions.indexOf(newPos)));
+            } else {
+                position.children.add(newPos);
+                buildPositionsTree(position.children.get(position.children.size() - 1), depth-1);
+            }
         }
     }
 

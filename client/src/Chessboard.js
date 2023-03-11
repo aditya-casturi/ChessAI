@@ -6,9 +6,11 @@ import axios from 'axios'
 const REST_API_URL = 'http://localhost:8080/api';
 
 let turn = "w";
+let moveNumber = 0;
 let selectedPiece = "";
 let blackKingSquareIndex = 4;
 let whiteKingSquareIndex = 60;
+let notation = "";
 
 export default function Chessboard() {
     const [board, setBoard] = useState(boardInit());
@@ -50,6 +52,18 @@ export default function Chessboard() {
 
         return chessboard;
     }
+
+    function squareIndexToName(squareIndex) {
+        if (squareIndex < 0 || squareIndex > 63) {
+            throw new Error("Square number must be between 0 and 63.");
+        }
+
+        const column = String.fromCharCode("a".charCodeAt(0) + (squareIndex % 8));
+        const row = 8 - Math.floor(squareIndex / 8);
+
+        return column + row;
+    }
+
 
     function indexToSquareColor(index) {
         return `chess-square ${Math.floor(index / 8) % 2 === 0 ?
@@ -258,12 +272,15 @@ export default function Chessboard() {
         board[targetSquareIndex] = board[selectedSquareIndex];
         board[selectedSquareIndex] = '';
 
+        notation = notation + squareIndexToName(targetSquareIndex) + " ";
 
         selectedPiece = "";
 
         setBoard(board)
         setSelectedSquareIndex(targetSquareIndex)
         setLegalMoves([])
+
+        moveNumber = moveNumber + 1;
 
         turn = turn === 'w' ? 'b' : 'w';
 
@@ -274,7 +291,9 @@ export default function Chessboard() {
             headers: {},
             data: {
                 jsonPayload: jsonPayload, // This is the body part
-                turn: turn
+                turn: turn,
+                moveNumber: JSON.stringify(moveNumber),
+                notation: notation
             }
         }).then(response => {
             console.log(response.data);
@@ -288,10 +307,10 @@ export default function Chessboard() {
     }
 
     function renderComputerMove(data) {
-        console.log()
         let newBoard = data['updatedBoard']
         let fromSquare = data['fromSquare']
         let toSquare = data['toSquare']
+
 
         selectedPiece = "";
 
@@ -299,7 +318,11 @@ export default function Chessboard() {
         setSelectedSquareIndex(toSquare);
         setLegalMoves([])
 
+        notation = notation + squareIndexToName(toSquare) + " ";
+
         turn = turn === 'w' ? 'b' : 'w';
+
+        moveNumber = moveNumber + 1;
     }
 
     function isMoveACheck(squareIndexOfMove) {
