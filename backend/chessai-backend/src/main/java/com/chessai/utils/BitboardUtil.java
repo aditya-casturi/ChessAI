@@ -32,45 +32,60 @@ public class BitboardUtil {
         return base << num;
     }
 
-//    private static long getLegalPawnMoves(Turn turn, Chessboard board) {
-//        List<Move> moves = new ArrayList<Move>();
-//
-//        long whitePawns = board.bitboards.get(Bitboards.pawn) & board.bitboards.get(Bitboards.white);
-//        List<Integer> whitePawnIndices = new ArrayList<Integer>();
-//        int index = 0;
-//        while (whitePawns != 0) {
-//            if ((whitePawns & 1) == 1) {
-//                whitePawnIndices.add(index);
-//            }
-//            whitePawns = whitePawns >> 1;
-//            index++;
-//        }
-//
-//        for (int fromIndex : whitePawnIndices) {
-////            long pawnBitboard = generateBitboardFromIndex(fromIndex);
-////            turn == Turn.WHITE ? wSinglePushTargets(board, pawnBitboard, moves, fromIndex) : bSinglePushTargets(board, pawnBitboard, moves, fromIndex);
-////            turn == Turn.WHITE ? wDoublePushTargets(board, pawnBitboard, moves, fromIndex) : bDoublePushTargets(board, pawnBitboard, moves, fromIndex);
-////            turn == Turn.WHITE ? wPawnCaptures(board, pawnBitboard, moves, fromIndex) : bPawnCaptures(board, pawnBitboard, moves, fromIndex);
-//        }
-//    }
+    private static void getLegalPawnMoves(Turn turn, Chessboard board, List<Move> moves) {
+        long pawns = turn == Turn.WHITE ? board.bitboards.get(Bitboards.pawn) & board.bitboards.get(Bitboards.white) : board.bitboards.get(Bitboards.pawn) & board.bitboards.get(Bitboards.black);
+        List<Integer> pawnIndices = new ArrayList<Integer>();
+        int index = 0;
+        while (pawns != 0) {
+            if ((pawns & 1) == 1) {
+                pawnIndices.add(index);
+            }
+            pawns = pawns >> 1;
+            index++;
+        }
+
+        for (int fromIndex : pawnIndices) {
+            long pawnBitboard = generateBitboardFromIndex(fromIndex);
+            pawnSinglePushTargets(board, pawnBitboard, moves, fromIndex, turn);
+            pawnDoublePushTargets(board, pawnBitboard, moves, fromIndex, turn);
+            pawnCaptures(board, pawnBitboard, moves, fromIndex, turn);
+        }
+    }
 
     private static long generateBitboardFromIndex(int index) {
         long bitboard = 0;
         return bitboard | (1L << index);
     }
 
-    private static long wPawnCaptures(Chessboard board) {
-        long whitePawns = board.bitboards.get(Bitboards.pawn) & board.bitboards.get(Bitboards.white);
-        long northEastTargets = northEastOne(whitePawns) & board.bitboards.get(Bitboards.black);
-        long northWestTargets = northWestOne(whitePawns) & board.bitboards.get(Bitboards.black);
-        return northEastTargets | northWestTargets;
+    private static void pawnSinglePushTargets(Chessboard board, long pawnBitboard, List<Move> moves, int fromIndex, Turn turn) {
+        long singlePushTargets = turn == Turn.WHITE ? northOne(pawnBitboard) & board.bitboards.get(Bitboards.empty) :
+                southOne(pawnBitboard) & board.bitboards.get(Bitboards.empty);
+
+        addMovesFromBitboard(moves, singlePushTargets, fromIndex);
     }
 
-    private static long bPawnCaptures(Chessboard board) {
-        long blackPawns = board.bitboards.get(Bitboards.pawn) & board.bitboards.get(Bitboards.black);
-        long southEastTargets = southEastOne(blackPawns) & board.bitboards.get(Bitboards.white);
-        long southWestTargets = southWestOne(blackPawns) & board.bitboards.get(Bitboards.white);
-        return southEastTargets | southWestTargets;
+    private static void pawnDoublePushTargets(Chessboard board, long pawnBitboard, List<Move> moves, int fromIndex, Turn turn) {
+        long rank = turn == Turn.WHITE ? 0b0000000000000000000000000000000000000000000000001111111100000000L :
+                0b0000000011111111000000000000000000000000000000000000000000000000L;
+        long pawns = pawnBitboard & rank;
+        long doublePushTargets = turn == Turn.WHITE ? northOne(pawnBitboard) & board.bitboards.get(Bitboards.empty) :
+                southOne(pawnBitboard) & board.bitboards.get(Bitboards.empty);
+        doublePushTargets = turn == Turn.WHITE ? northOne(doublePushTargets) & board.bitboards.get(Bitboards.empty) :
+                southOne(doublePushTargets) & board.bitboards.get(Bitboards.empty);
+
+        addMovesFromBitboard(moves, doublePushTargets, fromIndex);
+    }
+    private static void pawnCaptures(Chessboard board, long pawnBitboard, List<Move> moves, int fromIndex, Turn turn) {
+        long enemyPawns = turn == Turn.WHITE ? board.bitboards.get(Bitboards.pawn) & board.bitboards.get(Bitboards.black) :
+                board.bitboards.get(Bitboards.pawn) & board.bitboards.get(Bitboards.white);
+        long eastTargets = turn == Turn.WHITE ? northEastOne(pawnBitboard) & enemyPawns :
+                southEastOne(pawnBitboard) & enemyPawns;
+        long westTargets = turn == Turn.WHITE ? northWestOne(pawnBitboard) & enemyPawns :
+                southWestOne(pawnBitboard) & enemyPawns;
+
+        long captureTargets = eastTargets | westTargets;
+
+        addMovesFromBitboard(moves, captureTargets, fromIndex);
     }
 
     private static long northEastOne(long bitboard) {
@@ -89,36 +104,15 @@ public class BitboardUtil {
         return bitboard >> 9;
     }
 
-    private static long wSinglePushTargets(Chessboard board, long pawnBitboard, List<Move> moves, int fromIndex) {
-        long singlePushTargets = northOne(pawnBitboard) & board.bitboards.get(Bitboards.empty);
+    private static void addMovesFromBitboard(List<Move> moves, long bitboard, int fromIndex) {
         int index = 0;
-        while (singlePushTargets != 0) {
-            if ((singlePushTargets & 1) == 1) {
+        while (bitboard != 0) {
+            if ((bitboard & 1) == 1) {
                 moves.add(new Move(fromIndex, index));
             }
-            singlePushTargets = singlePushTargets >> 1;
+            bitboard = bitboard >> 1;
             index++;
         }
-        return northOne(pawnBitboard) & board.bitboards.get(Bitboards.empty);
-    }
-
-    private static long bSinglePushTargets(Chessboard board) {
-        long blackPawns = board.bitboards.get(Bitboards.pawn) & board.bitboards.get(Bitboards.black);
-        return southOne(blackPawns) & board.bitboards.get(Bitboards.empty);
-    }
-
-    private static long wDoublePushTargets(Chessboard board) {
-        long rank2 = 0b0000000000000000000000000000000000000000000000001111111100000000L;
-        long whitePawns = board.bitboards.get(Bitboards.pawn) & board.bitboards.get(Bitboards.white) & rank2;
-        long singlePushTargets = northOne(whitePawns) & board.bitboards.get(Bitboards.empty);
-        return northOne(singlePushTargets) & board.bitboards.get(Bitboards.empty);
-    }
-
-    private static long bDoublePushTargets(Chessboard board) {
-        long rank7 = 0b0000000011111111000000000000000000000000000000000000000000000000L;
-        long blackPawns = board.bitboards.get(Bitboards.pawn) & board.bitboards.get(Bitboards.black) & rank7;
-        long singlePushTargets = southOne(blackPawns) & board.bitboards.get(Bitboards.empty);
-        return southOne(singlePushTargets) & board.bitboards.get(Bitboards.empty);
     }
 
     private static long northOne(long bitboard) {
@@ -129,22 +123,106 @@ public class BitboardUtil {
         return bitboard >> 8;
     }
 
-    private static long getLegalKnightMoves(Turn turn, Chessboard board) {
+    private static void getLegalKnightMoves(Turn turn, Chessboard board, List<Move> moves) {
         long knights = turn == Turn.WHITE ? board.bitboards.get(Bitboards.white) & board.bitboards.get(Bitboards.knight) : board.bitboards.get(Bitboards.black) & board.bitboards.get(Bitboards.knight);
         long targets = turn == Turn.WHITE ? board.bitboards.get(Bitboards.black) : board.bitboards.get(Bitboards.white);
         targets |= board.bitboards.get(Bitboards.empty);
-        printBinary64(knights);
-        System.out.println();
-//        long northEastTargets = knights  & targets;
-//        long northWestTargets = northWestTwo(knights) & targets;
-//        long southEastTargets = southEastTwo(knights) & targets;
-//        long southWestTargets = southWestTwo(knights) & targets;
-//        long eastNorthTargets = eastNorthTwo(knights) & targets;
-//        long eastSouthTargets = eastSouthTwo(knights) & targets;
-//        long westNorthTargets = westNorthTwo(knights) & targets;
-//        long westSouthTargets = westSouthTwo(knights) & targets;
+        long notAFile = 0b1111111011111110111111101111111011111110111111101111111011111110L;
+        long notHFile = 0b0111111101111111011111110111111101111111011111110111111101111111L;
+        long notABFile = 0b1111110011111100111111001111110011111100111111001111110011111100L;
+        long notGHFile = 0b0011111100111111001111110011111100111111001111110011111100111111L;
 
-        return 0b0;
+        List<Integer> knightIndices = new ArrayList<Integer>();
+        int index = 0;
+        while (knights != 0) {
+            if ((knights & 1) == 1) {
+                knightIndices.add(index);
+            }
+            knights = knights >> 1;
+            index++;
+        }
+
+        for (int fromIndex : knightIndices) {
+            long knightBitboard = generateBitboardFromIndex(fromIndex);
+            long northEastTargets = (knightBitboard << 10) & targets & notABFile;
+            long northWestTargets = (knightBitboard << 6) & targets & notGHFile;
+            long southEastTargets = (knightBitboard >> 6) & targets & notABFile;
+            long southWestTargets = (knightBitboard >> 10) & targets & notGHFile;
+            long eastNorthTargets = (knightBitboard << 17) & targets & notAFile;
+            long eastSouthTargets = (knightBitboard >> 15) & targets & notAFile;
+            long westNorthTargets = (knightBitboard << 15) & targets & notHFile;
+            long westSouthTargets = (knightBitboard >> 15) & targets & notAFile;
+
+            long moveOrCaptureTargets = northEastTargets | northWestTargets | southEastTargets | southWestTargets |
+                    eastNorthTargets | eastSouthTargets | westNorthTargets | westSouthTargets;
+
+            addMovesFromBitboard(moves, moveOrCaptureTargets, fromIndex);
+        }
+    }
+
+    private static void getLegalBishopMoves(Turn turn, Chessboard board, List<Move> moves) {
+        long bishops = turn == Turn.WHITE ? board.bitboards.get(Bitboards.white) & board.bitboards.get(Bitboards.bishop) : board.bitboards.get(Bitboards.black) & board.bitboards.get(Bitboards.bishop);
+        long targets = turn == Turn.WHITE ? board.bitboards.get(Bitboards.black) : board.bitboards.get(Bitboards.white);
+        targets |= board.bitboards.get(Bitboards.empty);
+
+        List<Integer> bishopIndices = new ArrayList<>();
+        int index = 0;
+        while (bishops != 0) {
+            if ((bishops & 1) == 1) {
+                bishopIndices.add(index);
+            }
+            bishops = bishops >> 1;
+            index++;
+        }
+
+        for (int fromIndex : bishopIndices) {
+            long bishopBitboard = generateBitboardFromIndex(fromIndex);
+
+            long northeastTargets = generateTargetsInDirection(board, targets, bishopBitboard, Direction.NORTHEAST);
+            long northwestTargets = generateTargetsInDirection(board, targets, bishopBitboard, Direction.NORTHWEST);
+            long southeastTargets = generateTargetsInDirection(board, targets, bishopBitboard, Direction.SOUTHEAST);
+            long southwestTargets = generateTargetsInDirection(board, targets, bishopBitboard, Direction.SOUTHWEST);
+
+            long moveOrCaptureTargets = northeastTargets | northwestTargets | southeastTargets | southwestTargets;
+
+            addMovesFromBitboard(moves, moveOrCaptureTargets, fromIndex);
+        }
+    }
+
+    private static long generateTargetsInDirection(Chessboard board, long targets, long fromBitboard, Direction direction) {
+        long targetsInDirection = 0L;
+        long currentBitboard = fromBitboard;
+
+        while (true) {
+            currentBitboard = direction.shift(currentBitboard);
+            if ((currentBitboard & targets) != 0) {
+                targetsInDirection |= currentBitboard;
+                break;
+            } else if ((currentBitboard & board.bitboards.get(Bitboards.empty)) != 0) {
+                targetsInDirection |= currentBitboard;
+            } else {
+                break;
+            }
+        }
+
+        return targetsInDirection;
+    }
+
+    public enum Direction {
+        NORTHEAST(9),
+        NORTHWEST(7),
+        SOUTHEAST(-7),
+        SOUTHWEST(-9);
+
+        private final int shiftAmount;
+
+        Direction(int shiftAmount) {
+            this.shiftAmount = shiftAmount;
+        }
+
+        public long shift(long bitboard) {
+            return bitboard << shiftAmount;
+        }
     }
 
     public static void printBinary64(long b) {
@@ -155,9 +233,13 @@ public class BitboardUtil {
     }
 
     public static void main(String[] args) {
-//        Chessboard board = new Chessboard();
-//        long pawnMoves = getLegalPawnMoves(Turn.WHITE, board);
-//        printBinary64(pawnMoves);
-//        printBinary64(getLegalKnightMoves(Turn.WHITE, board));
+        List<Move> moves = new ArrayList<Move>();
+        Chessboard board = new Chessboard();
+//        getLegalPawnMoves(Turn.WHITE, board, moves);
+//        getLegalKnightMoves(Turn.WHITE, board, moves);
+        getLegalBishopMoves(Turn.WHITE, board, moves);
+        for (Move move : moves) {
+            System.out.println("From: " + move.getFromSquare() + " To: " + move.getToSquare() + "");
+        }
     }
 }
