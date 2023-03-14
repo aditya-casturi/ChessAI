@@ -1,0 +1,9 @@
+com\chessai\controller\BackendController.class
+com\chessai\utils\BitboardUtil.class
+com\chessai\model\Move.class
+com\chessai\model\Chessboard$EnumPiece.class
+com\chessai\model\Chessboard.class
+com\chessai\ChessAIBackendApplication.class
+com\chessai\model\Position.class
+com\chessai\utils\Eval.class
+com\chessai\utils\LegalMoves.class
