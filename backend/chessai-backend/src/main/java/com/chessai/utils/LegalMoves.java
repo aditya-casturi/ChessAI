@@ -6,6 +6,7 @@ import com.chessai.model.Position;
 import java.util.*;
 
 public class LegalMoves {
+
     public static List<Move> getLegalMoves(Position position) {
         String[] board = position.board;
         String turn = position.getTurn();
