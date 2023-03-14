@@ -21,9 +21,10 @@ import static com.chessai.utils.LegalMoves.*;
 @Controller
 @RequestMapping("/api")
 public class BackendController {
-    final int DEPTH = 5;
+    final int DEPTH = 4;
+    public static int positionsSearched = 0;
     Map<Position, Integer> transpositionTable = new HashMap<>();
-    public static List<Position> transpositions = new ArrayList<>();
+//    public static List<Position> transpositions = new ArrayList<>();
 
     @RequestMapping(value = "/getComputerMove", method = RequestMethod.POST)
     @ResponseBody
@@ -36,21 +37,22 @@ public class BackendController {
         int moveNumber = Integer.parseInt(requestBody.get("moveNumber"));
         String[] board = gson.fromJson(json, String[].class);
 
-
         Position rootPosition = new Position(turn, null, board, null);
-        Timer timer = new Timer();
 
+        positionsSearched = 0;
         Stopwatch stopwatch = Stopwatch.createStarted();
         buildPositionsTree(rootPosition, DEPTH);
         stopwatch.stop();
+        System.out.println("---------------------------------------------------------------------");
         System.out.println("Time elapsed to create tree: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        System.out.println("Positions searched: " + positionsSearched);
+        System.out.println("---------------------------------------------------------------------");
         stopwatch.reset();
 
         stopwatch.start();
         // for computer move, alpha=MIN_VALUE, beta=MAX_VALUE, maximizingPlayer=true
         int bestScore = minimax(rootPosition, Integer.MIN_VALUE, Integer.MAX_VALUE, false, transpositionTable);
         stopwatch.stop();
-        System.out.println("Time elapsed to execute minimax: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
         Position bestChild = null;
         for (Position child : rootPosition.children) {
@@ -103,7 +105,7 @@ public class BackendController {
                 eval = transpositionTable.get(child);
             } else {
                 eval = minimax(child, alpha, beta, !maximizingPlayer, transpositionTable);
-                transpositionTable.put(child, eval);
+//                transpositionTable.put(child, eval);
             }
             if (maximizingPlayer) {
                 bestEval = Math.max(bestEval, eval);
@@ -143,12 +145,14 @@ public class BackendController {
                 newBoard = capture(newBoard, legalMove.getFromSquare(), legalMove.getToSquare());
             }
             Position newPos = new Position(turn, position, newBoard, legalMove);
-            if (transpositions.contains(newPos)) {
-                position.children.add(transpositions.get(transpositions.indexOf(newPos)));
-            } else {
+//            if (transpositions.contains(newPos)) {
+//                positionsSearched++;
+//                position.children.add(transpositions.get(transpositions.indexOf(newPos)));
+//            } else {
                 position.children.add(newPos);
+                positionsSearched++;
                 buildPositionsTree(position.children.get(position.children.size() - 1), depth-1);
-            }
+//            }
         }
     }
 
